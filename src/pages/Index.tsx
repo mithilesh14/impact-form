@@ -33,6 +33,29 @@ const Index = () => {
     }
   }, [profile?.company_id]);
 
+  // Refetch progress stats when the page becomes visible (e.g., when navigating back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && profile?.company_id) {
+        fetchProgressStats();
+      }
+    };
+
+    const handleFocus = () => {
+      if (profile?.company_id) {
+        fetchProgressStats();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [profile?.company_id]);
+
   const fetchProgressStats = async () => {
     try {
       // Get total questions count

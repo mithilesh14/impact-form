@@ -67,7 +67,7 @@ const AppRoutes = () => {
 
 const getRoleBasedRedirect = (role?: string) => {
   switch (role) {
-    case 'Client': return '/';
+    case 'Client': return '/sections';
     case 'Admin': return '/admin';
     case 'Reviewer': return '/reviewer';
     default: return '/login';

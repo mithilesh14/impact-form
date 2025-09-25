@@ -37,8 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('email', userEmail)
         .maybeSingle();
 
-      if (error) throw error;
-      console.log('Profile data:', data);
+      console.log('Profile fetch result:', { data, error });
+      
+      if (error) {
+        console.error('Profile fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Setting profile data:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching user profile:', error);

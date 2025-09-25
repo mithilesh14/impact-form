@@ -55,14 +55,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log('AuthProvider - Starting auth initialization');
     let mounted = true;
     
+    // Fallback timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.log('AuthProvider - Loading timeout reached, setting loading to false');
+      if (mounted) {
+        setLoading(false);
+      }
+    }, 5000);
+    
+    // Check for existing session first
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      
+      console.log('AuthProvider - Initial session check:', { hasSession: !!session, email: session?.user?.email });
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user?.email) {
+        await fetchUserProfile(session?.user?.email);
+      } else {
+        setProfile(null);
+      }
+      
+      console.log('AuthProvider - Setting loading to false after initial check');
+      setLoading(false);
+      clearTimeout(loadingTimeout);
+    }).catch((error) => {
+      console.error('AuthProvider - Error getting session:', error);
+      if (mounted) {
+        setLoading(false);
+        clearTimeout(loadingTimeout);
+      }
+    });
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('Auth state change:', { event, user: !!session?.user });
+        console.log('AuthProvider - Auth state change:', { event, hasSession: !!session });
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -71,32 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setProfile(null);
         }
-        
-        if (mounted) {
-          setLoading(false);
-        }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      
-      console.log('Initial session check:', { user: !!session?.user });
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user?.email) {
-        fetchUserProfile(session.user.email).finally(() => {
-          if (mounted) setLoading(false);
-        });
-      } else {
-        if (mounted) setLoading(false);
-      }
-    });
-
     return () => {
+      console.log('AuthProvider - Cleanup');
       mounted = false;
+      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);

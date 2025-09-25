@@ -69,28 +69,56 @@ const DeadlineManager = () => {
     }
   };
 
-  const updateDeadline = async (submissionId: string, deadline: Date) => {
+  const updateDeadline = async (submissionId: string, newDeadline: Date, companyId: string) => {
     try {
+      const deadlineStr = newDeadline.toISOString().split('T')[0];
+      
       const { error } = await supabase
         .from('submissions')
-        .update({ deadline: deadline.toISOString().split('T')[0] })
+        .update({ deadline: deadlineStr })
         .eq('id', submissionId);
 
       if (error) throw error;
 
-      setSubmissions(submissions.map(sub => 
-        sub.id === submissionId 
-          ? { ...sub, deadline: deadline.toISOString().split('T')[0] }
-          : sub
+      // Send email notification
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-deadline-notification', {
+          body: {
+            companyId: companyId,
+            deadline: deadlineStr
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending email notification:', emailError);
+          toast({
+            title: "Warning",
+            description: "Deadline updated but email notification failed",
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Success", 
+            description: "Deadline updated and notifications sent",
+          });
+        }
+      } catch (emailError) {
+        console.error('Error calling email function:', emailError);
+        toast({
+          title: "Success",
+          description: "Deadline updated (email notification unavailable)",
+        });
+      }
+
+      // Update local state
+      setSubmissions(submissions.map(submission => 
+        submission.id === submissionId 
+          ? { ...submission, deadline: deadlineStr }
+          : submission
       ));
 
       setEditingDeadline(null);
       setSelectedDate(undefined);
-
-      toast({
-        title: "Success",
-        description: "Deadline updated successfully",
-      });
     } catch (error) {
       console.error('Error updating deadline:', error);
       toast({
@@ -162,7 +190,7 @@ const DeadlineManager = () => {
                       
                       <Button
                         size="sm"
-                        onClick={() => selectedDate && updateDeadline(submission.id, selectedDate)}
+                        onClick={() => selectedDate && updateDeadline(submission.id, selectedDate, submission.company_id)}
                         disabled={!selectedDate}
                       >
                         <Save className="w-4 h-4" />

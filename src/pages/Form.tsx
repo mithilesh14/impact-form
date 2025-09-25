@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import LogoutButton from "@/components/LogoutButton";
+import * as XLSX from 'xlsx';
 
 const sectionTitles = {
   "general": "General Information",
@@ -189,23 +190,86 @@ const Form = () => {
   };
 
   const exportToExcel = () => {
-    const exportData = currentSectionQuestions.map(question => ({
+    const exportData = questions.map(question => ({
       'Question Code': question.code,
-      'Section': question.section,
+      'Section': sectionId,
       'Question': question.question_text,
-      'Response': formData[question.id] || '',
+      'Response': answers[question.id]?.current || '',
+      'Comments': answers[question.id]?.comments || '',
       'Input Type': question.input_type
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sections[currentSection]);
-    XLSX.writeFile(wb, `${sections[currentSection]}_draft.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, sectionTitle || 'Assessment');
+    XLSX.writeFile(wb, `${sectionTitle || 'Assessment'}_draft.xlsx`);
 
     toast({
       title: "Success",
       description: "Draft exported successfully",
     });
+  };
+
+  const handleSave = async () => {
+    if (!submissionId) return;
+    
+    try {
+      const responses = Object.entries(answers).map(([questionId, answer]) => ({
+        submission_id: submissionId,
+        question_id: questionId,
+        value_text: answer.current
+      }));
+
+      for (const response of responses) {
+        if (!response.value_text) continue;
+        
+        await supabase
+          .from('responses')
+          .upsert(response, {
+            onConflict: 'submission_id,question_id'
+          });
+      }
+
+      toast({
+        title: "Success",
+        description: "Progress saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save progress",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    await handleSave();
+    
+    try {
+      await supabase
+        .from('submissions')
+        .update({ 
+          status: 'submitted',
+          submitted_at: new Date().toISOString()
+        })
+        .eq('id', submissionId);
+
+      toast({
+        title: "Success",
+        description: "Assessment submitted successfully",
+      });
+      
+      navigate("/sections");
+    } catch (error) {
+      console.error('Error submitting:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to submit assessment",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -266,6 +330,15 @@ const Form = () => {
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Save Progress
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={exportToExcel}
+                  className="h-12 px-6 bg-white/50 hover:bg-white/70 border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 rounded-2xl font-medium"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Draft
                 </Button>
                 <LogoutButton />
               </div>

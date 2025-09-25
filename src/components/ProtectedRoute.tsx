@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   if (allowedRoles && !allowedRoles.includes(profile.role)) {
     // Redirect based on role
-    if (profile.role === 'submitter') {
+    if (profile.role === 'client') {
       return <Navigate to="/sections" replace />;
     } else if (profile.role === 'Admin') {
       return <Navigate to="/admin" replace />;

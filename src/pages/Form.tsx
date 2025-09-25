@@ -46,14 +46,28 @@ const Form = () => {
       const decodedSectionId = decodeURIComponent(sectionId || '');
       console.log('Form component - decoded sectionId:', decodedSectionId);
       
-      // Fetch questions for the section
-      const { data: questionsData, error: questionsError } = await supabase
+      // Add timeout to prevent hanging
+      const questionsPromise = supabase
         .from('questions')
         .select('*')
         .eq('section', decodedSectionId)
         .order('code');
 
-      console.log('Form component - questions query result:', { questionsData, questionsError });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Questions query timeout')), 10000)
+      );
+
+      console.log('Form component - Starting questions query...');
+      const { data: questionsData, error: questionsError } = await Promise.race([
+        questionsPromise,
+        timeoutPromise
+      ]) as any;
+
+      console.log('Form component - questions query result:', { 
+        questionsData, 
+        questionsError, 
+        dataLength: questionsData?.length 
+      });
 
       if (questionsError) throw questionsError;
       

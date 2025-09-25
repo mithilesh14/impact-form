@@ -39,14 +39,27 @@ const Form = () => {
 
   const fetchQuestionsAndSubmission = async () => {
     try {
+      console.log('Form component - sectionId from URL:', sectionId);
+      console.log('Form component - profile company_id:', profile?.company_id);
+      
+      // Decode the section ID from URL
+      const decodedSectionId = decodeURIComponent(sectionId || '');
+      console.log('Form component - decoded sectionId:', decodedSectionId);
+      
       // Fetch questions for the section
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .eq('section', sectionId)
+        .eq('section', decodedSectionId)
         .order('code');
 
+      console.log('Form component - questions query result:', { questionsData, questionsError });
+
       if (questionsError) throw questionsError;
+      
+      if (!questionsData || questionsData.length === 0) {
+        console.log('Form component - No questions found for section:', decodedSectionId);
+      }
       
       setQuestions(questionsData || []);
 

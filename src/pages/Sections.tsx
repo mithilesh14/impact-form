@@ -35,6 +35,8 @@ const Sections = () => {
         .select('section')
         .order('section');
 
+      console.log('Sections page - available sections in DB:', data);
+
       if (error) throw error;
 
       if (!data || data.length === 0) {
@@ -53,6 +55,7 @@ const Sections = () => {
         count: count as number
       }));
 
+      console.log('Sections page - processed sections:', sectionsArray);
       setSections(sectionsArray);
     } catch (error) {
       console.error('Error fetching sections:', error);
@@ -62,7 +65,9 @@ const Sections = () => {
   };
 
   const handleSectionSelect = (sectionName: string) => {
-    navigate(`/form/${sectionName.toLowerCase()}`);
+    console.log('Navigating to section:', sectionName);
+    // Use the exact section name from database, not lowercase
+    navigate(`/form/${encodeURIComponent(sectionName)}`);
   };
 
   if (loading) {

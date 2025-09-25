@@ -39,14 +39,10 @@ const Form = () => {
 
   const fetchQuestionsAndSubmission = async () => {
     try {
-      console.log('Form component - sectionId from URL:', sectionId);
-      console.log('Form component - profile company_id:', profile?.company_id);
-      
       // Decode the section ID from URL
       const decodedSectionId = decodeURIComponent(sectionId || '');
-      console.log('Form component - decoded sectionId:', decodedSectionId);
       
-      // Add timeout to prevent hanging
+      // Fetch questions for the section with timeout
       const questionsPromise = supabase
         .from('questions')
         .select('*')
@@ -57,22 +53,18 @@ const Form = () => {
         setTimeout(() => reject(new Error('Questions query timeout')), 10000)
       );
 
-      console.log('Form component - Starting questions query...');
       const { data: questionsData, error: questionsError } = await Promise.race([
         questionsPromise,
         timeoutPromise
       ]) as any;
 
-      console.log('Form component - questions query result:', { 
-        questionsData, 
-        questionsError, 
-        dataLength: questionsData?.length 
-      });
-
       if (questionsError) throw questionsError;
       
       if (!questionsData || questionsData.length === 0) {
-        console.log('Form component - No questions found for section:', decodedSectionId);
+        console.log('No questions found for section:', decodedSectionId);
+        setQuestions([]);
+        setLoading(false);
+        return;
       }
       
       setQuestions(questionsData || []);
@@ -125,10 +117,8 @@ const Form = () => {
         .eq('company_id', profile?.company_id)
         .eq('reporting_year', currentYear); // Query current year, not previous year
 
-      console.log('Form component - history data:', historyData);
-
       if (historyError) {
-        console.error('Form component - history error:', historyError);
+        console.error('Error fetching history:', historyError);
       }
 
       // Map responses and history to answers

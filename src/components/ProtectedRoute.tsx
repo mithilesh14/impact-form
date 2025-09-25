@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (allowedRoles && !allowedRoles.includes(profile.role)) {
     // Redirect based on role
     if (profile.role === 'client') {
-      return <Navigate to="/sections" replace />;
+      return <Navigate to="/" replace />; // Go to dashboard, not sections
     } else if (profile.role === 'Admin') {
       return <Navigate to="/admin" replace />;
     } else if (profile.role === 'Reviewer') {

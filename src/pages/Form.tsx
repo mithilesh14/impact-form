@@ -76,7 +76,7 @@ const Form = () => {
       
       setQuestions(questionsData || []);
 
-      // Fetch or create submission
+      // Fetch or create submission FIRST
       const currentYear = new Date().getFullYear();
       let { data: submission, error: submissionError } = await supabase
         .from('submissions')
@@ -84,14 +84,14 @@ const Form = () => {
         .eq('company_id', profile?.company_id)
         .eq('reporting_year', currentYear)
         .eq('status', 'draft')
-        .single();
+        .maybeSingle();
 
       if (submissionError && submissionError.code !== 'PGRST116') {
         throw submissionError;
       }
 
       if (!submission) {
-        // Create new submission
+        // Create new submission for current year
         const { data: newSubmission, error: createError } = await supabase
           .from('submissions')
           .insert({
@@ -108,7 +108,7 @@ const Form = () => {
 
       setSubmissionId(submission.id);
 
-      // Fetch existing responses
+      // Now fetch existing responses for current year
       const { data: responsesData, error: responsesError } = await supabase
         .from('responses')
         .select('*')
@@ -116,13 +116,17 @@ const Form = () => {
 
       if (responsesError) throw responsesError;
 
-      // Fetch historical data from submission_with_history view
-      // Query for current year to get view with both current and last year data
+      // Fetch historical data - query 2024 approved responses directly
       const { data: historyData, error: historyError } = await supabase
-        .from('submission_with_history')
-        .select('*')
-        .eq('company_id', profile?.company_id)
-        .eq('reporting_year', currentYear); // Query current year, not previous year
+        .from('responses')
+        .select(`
+          value_text,
+          question_id,
+          submissions!inner(reporting_year, status, company_id)
+        `)
+        .eq('submissions.company_id', profile?.company_id)
+        .eq('submissions.reporting_year', currentYear - 1)
+        .eq('submissions.status', 'approved');
 
       if (historyError) {
         console.error('Error fetching history:', historyError);
@@ -137,7 +141,7 @@ const Form = () => {
         
         answersMap[question.id] = {
           current: response?.value_text || '',
-          lastYear: history?.last_year_value || '',
+          lastYear: history?.value_text || '',
           comments: ''
         };
       });

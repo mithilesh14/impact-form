@@ -243,6 +243,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_submission_with_history: {
+        Args: { target_company_id?: string }
+        Returns: {
+          company_id: string
+          current_submission_id: string
+          current_value: string
+          input_type: string
+          last_year: number
+          last_year_value: string
+          question_code: string
+          question_id: string
+          question_text: string
+          reporting_year: number
+          section: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

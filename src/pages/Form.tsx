@@ -192,15 +192,39 @@ const Form = () => {
     if (!submissionId || !currentQuestion) return;
 
     try {
-      const { error } = await supabase
+      // First try to update existing response
+      const { data: existingResponse, error: selectError } = await supabase
         .from('responses')
-        .upsert({
-          submission_id: submissionId,
-          question_id: currentQuestion.id,
-          value_text: currentAnswer.current,
-        });
+        .select('id')
+        .eq('submission_id', submissionId)
+        .eq('question_id', currentQuestion.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (selectError) throw selectError;
+
+      if (existingResponse) {
+        // Update existing response
+        const { error: updateError } = await supabase
+          .from('responses')
+          .update({
+            value_text: currentAnswer.current,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingResponse.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new response
+        const { error: insertError } = await supabase
+          .from('responses')
+          .insert({
+            submission_id: submissionId,
+            question_id: currentQuestion.id,
+            value_text: currentAnswer.current,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Progress saved",
@@ -220,18 +244,44 @@ const Form = () => {
     if (!submissionId) return;
 
     try {
-      // Save all answers
-      const responses = questions.map(question => ({
-        submission_id: submissionId,
-        question_id: question.id,
-        value_text: answers[question.id]?.current || '',
-      }));
+      // Save all answers using the same update-or-insert logic
+      for (const question of questions) {
+        const responseValue = answers[question.id]?.current || '';
+        
+        // First try to update existing response
+        const { data: existingResponse, error: selectError } = await supabase
+          .from('responses')
+          .select('id')
+          .eq('submission_id', submissionId)
+          .eq('question_id', question.id)
+          .maybeSingle();
 
-      const { error } = await supabase
-        .from('responses')
-        .upsert(responses);
+        if (selectError) throw selectError;
 
-      if (error) throw error;
+        if (existingResponse) {
+          // Update existing response
+          const { error: updateError } = await supabase
+            .from('responses')
+            .update({
+              value_text: responseValue,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingResponse.id);
+
+          if (updateError) throw updateError;
+        } else {
+          // Insert new response
+          const { error: insertError } = await supabase
+            .from('responses')
+            .insert({
+              submission_id: submissionId,
+              question_id: question.id,
+              value_text: responseValue,
+            });
+
+          if (insertError) throw insertError;
+        }
+      }
 
       // Update submission status
       const { error: updateError } = await supabase

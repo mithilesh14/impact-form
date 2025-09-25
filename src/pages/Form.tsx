@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,120 +8,130 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import LogoutButton from "@/components/LogoutButton";
 
-// Sample questions for each section
-const sectionQuestions = {
-  environmental: [
-    {
-      id: 1,
-      question: "What is your organization's total carbon footprint (CO2 equivalent tonnes)?",
-      type: "number",
-      category: "Carbon Emissions"
-    },
-    {
-      id: 2,
-      question: "Percentage of energy consumption from renewable sources",
-      type: "percentage",
-      category: "Energy Usage"
-    },
-    {
-      id: 3,
-      question: "Total water consumption (cubic meters)",
-      type: "number",
-      category: "Resource Usage"
-    },
-    {
-      id: 4,
-      question: "Describe your waste reduction initiatives and their impact",
-      type: "text",
-      category: "Waste Management"
-    },
-    {
-      id: 5,
-      question: "Number of environmental compliance violations in the reporting period",
-      type: "number",
-      category: "Compliance"
-    }
-  ],
-  social: [
-    {
-      id: 1,
-      question: "Total number of employees",
-      type: "number",
-      category: "Employment"
-    },
-    {
-      id: 2,
-      question: "Employee turnover rate (%)",
-      type: "percentage",
-      category: "Employee Retention"
-    },
-    {
-      id: 3,
-      question: "Hours of training provided per employee",
-      type: "number",
-      category: "Training & Development"
-    },
-    {
-      id: 4,
-      question: "Describe your diversity and inclusion initiatives",
-      type: "text",
-      category: "Diversity & Inclusion"
-    },
-    {
-      id: 5,
-      question: "Community investment amount ($)",
-      type: "number",
-      category: "Community Impact"
-    }
-  ],
-  governance: [
-    {
-      id: 1,
-      question: "Number of independent board members",
-      type: "number",
-      category: "Board Composition"
-    },
-    {
-      id: 2,
-      question: "Frequency of board meetings per year",
-      type: "number",
-      category: "Board Operations"
-    },
-    {
-      id: 3,
-      question: "Describe your anti-corruption policies and procedures",
-      type: "text",
-      category: "Ethics & Compliance"
-    },
-    {
-      id: 4,
-      question: "Number of ethics violations reported",
-      type: "number",
-      category: "Ethics Violations"
-    },
-    {
-      id: 5,
-      question: "Percentage of executives with variable compensation tied to ESG metrics",
-      type: "percentage",
-      category: "Executive Compensation"
-    }
-  ]
-};
+interface Question {
+  id: string;
+  question_text: string;
+  input_type: string;
+  code: string;
+}
 
 const Form = () => {
   const { sectionId } = useParams<{ sectionId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useAuth();
   
-  const questions = sectionQuestions[sectionId as keyof typeof sectionQuestions] || [];
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, { current: string; lastYear: string; comments: string }>>({});
-  
+  const [answers, setAnswers] = useState<Record<string, { current: string; lastYear: string; comments: string }>>({});
+  const [loading, setLoading] = useState(true);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.company_id && sectionId) {
+      fetchQuestionsAndSubmission();
+    }
+  }, [profile?.company_id, sectionId]);
+
+  const fetchQuestionsAndSubmission = async () => {
+    try {
+      // Fetch questions for the section
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('section', sectionId)
+        .order('code');
+
+      if (questionsError) throw questionsError;
+      
+      setQuestions(questionsData || []);
+
+      // Fetch or create submission
+      const currentYear = new Date().getFullYear();
+      let { data: submission, error: submissionError } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('company_id', profile?.company_id)
+        .eq('reporting_year', currentYear)
+        .eq('status', 'draft')
+        .single();
+
+      if (submissionError && submissionError.code !== 'PGRST116') {
+        throw submissionError;
+      }
+
+      if (!submission) {
+        // Create new submission
+        const { data: newSubmission, error: createError } = await supabase
+          .from('submissions')
+          .insert({
+            company_id: profile?.company_id,
+            reporting_year: currentYear,
+            status: 'draft'
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        submission = newSubmission;
+      }
+
+      setSubmissionId(submission.id);
+
+      // Fetch existing responses
+      const { data: responsesData, error: responsesError } = await supabase
+        .from('responses')
+        .select('*')
+        .eq('submission_id', submission.id);
+
+      if (responsesError) throw responsesError;
+
+      // Fetch historical data from submission_with_history view
+      const { data: historyData, error: historyError } = await supabase
+        .from('submission_with_history')
+        .select('*')
+        .eq('company_id', profile?.company_id)
+        .eq('reporting_year', currentYear - 1);
+
+      if (historyError) throw historyError;
+
+      // Map responses and history to answers
+      const answersMap: Record<string, { current: string; lastYear: string; comments: string }> = {};
+      
+      questionsData?.forEach(question => {
+        const response = responsesData?.find(r => r.question_id === question.id);
+        const history = historyData?.find(h => h.question_id === question.id);
+        
+        answersMap[question.id] = {
+          current: response?.value_text || '',
+          lastYear: history?.last_year_value || '',
+          comments: ''
+        };
+      });
+
+      setAnswers(answersMap);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
 
   const handleAnswerChange = (field: 'current' | 'lastYear' | 'comments', value: string) => {
+    if (!currentQuestion) return;
+    
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: {
@@ -145,22 +155,86 @@ const Form = () => {
     }
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Progress saved",
-      description: "Your responses have been saved successfully.",
-    });
+  const handleSave = async () => {
+    if (!submissionId || !currentQuestion) return;
+
+    try {
+      const { error } = await supabase
+        .from('responses')
+        .upsert({
+          submission_id: submissionId,
+          question_id: currentQuestion.id,
+          value_text: currentAnswer.current,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Progress saved",
+        description: "Your responses have been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save progress.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSubmit = () => {
-    toast({
-      title: "Assessment completed",
-      description: "Your ESG assessment has been submitted for review.",
-    });
-    navigate("/sections");
+  const handleSubmit = async () => {
+    if (!submissionId) return;
+
+    try {
+      // Save all answers
+      const responses = questions.map(question => ({
+        submission_id: submissionId,
+        question_id: question.id,
+        value_text: answers[question.id]?.current || '',
+      }));
+
+      const { error } = await supabase
+        .from('responses')
+        .upsert(responses);
+
+      if (error) throw error;
+
+      // Update submission status
+      const { error: updateError } = await supabase
+        .from('submissions')
+        .update({ 
+          status: 'submitted',
+          submitted_at: new Date().toISOString()
+        })
+        .eq('id', submissionId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Assessment completed",
+        description: "Your ESG assessment has been submitted for review.",
+      });
+      navigate("/sections");
+    } catch (error) {
+      console.error('Error submitting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit assessment.",
+        variant: "destructive",
+      });
+    }
   };
 
-  if (!currentQuestion) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion || questions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
         <Card className="p-8">
@@ -195,15 +269,18 @@ const Form = () => {
                 <h1 className="text-3xl font-bold text-foreground">{sectionTitle} Assessment</h1>
                 <p className="text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleSave}
-                className="hover:bg-secondary/50"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Progress
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleSave}
+                  className="hover:bg-secondary/50"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Progress
+                </Button>
+                <LogoutButton />
+              </div>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
@@ -213,8 +290,8 @@ const Form = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="text-sm text-primary font-medium mb-2">{currentQuestion.category}</div>
-                  <CardTitle className="text-xl leading-relaxed">{currentQuestion.question}</CardTitle>
+                  <div className="text-sm text-primary font-medium mb-2">{currentQuestion.code}</div>
+                  <CardTitle className="text-xl leading-relaxed">{currentQuestion.question_text}</CardTitle>
                 </div>
               </div>
             </CardHeader>
@@ -222,7 +299,7 @@ const Form = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="current">Current Year Value</Label>
-                  {currentQuestion.type === 'text' ? (
+                  {currentQuestion.input_type === 'textarea' ? (
                     <Textarea
                       id="current"
                       placeholder="Enter your response..."
@@ -233,8 +310,8 @@ const Form = () => {
                   ) : (
                     <Input
                       id="current"
-                      type={currentQuestion.type === 'number' ? 'number' : 'text'}
-                      placeholder={currentQuestion.type === 'percentage' ? 'e.g., 75%' : 'Enter value...'}
+                      type={currentQuestion.input_type === 'number' ? 'number' : 'text'}
+                      placeholder="Enter value..."
                       value={currentAnswer.current}
                       onChange={(e) => handleAnswerChange('current', e.target.value)}
                       className="h-11"
@@ -244,22 +321,22 @@ const Form = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="lastYear">Last Year Value</Label>
-                  {currentQuestion.type === 'text' ? (
+                  {currentQuestion.input_type === 'textarea' ? (
                     <Textarea
                       id="lastYear"
-                      placeholder="Enter last year's response..."
+                      placeholder="Last year's value (auto-populated)"
                       value={currentAnswer.lastYear}
-                      onChange={(e) => handleAnswerChange('lastYear', e.target.value)}
-                      className="min-h-[100px]"
+                      disabled
+                      className="min-h-[100px] bg-muted"
                     />
                   ) : (
                     <Input
                       id="lastYear"
-                      type={currentQuestion.type === 'number' ? 'number' : 'text'}
-                      placeholder={currentQuestion.type === 'percentage' ? 'e.g., 70%' : 'Enter last year value...'}
+                      type={currentQuestion.input_type === 'number' ? 'number' : 'text'}
+                      placeholder="Last year's value (auto-populated)"
                       value={currentAnswer.lastYear}
-                      onChange={(e) => handleAnswerChange('lastYear', e.target.value)}
-                      className="h-11"
+                      disabled
+                      className="h-11 bg-muted"
                     />
                   )}
                 </div>

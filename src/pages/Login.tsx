@@ -3,29 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Login successful",
-        description: "Welcome to your ESG Portal",
-      });
-      navigate("/sections");
-    }, 1000);
+    const { error } = await signIn(email, password);
+    
+    setIsLoading(false);
+    
+    if (error) {
+      console.error("Login error:", error);
+    }
   };
 
   return (

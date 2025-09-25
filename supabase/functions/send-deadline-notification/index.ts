@@ -65,18 +65,47 @@ const handler = async (req: Request): Promise<Response> => {
       day: 'numeric'
     });
 
-    // For now, just log the email that would be sent (since Resend requires setup)
-    console.log('Would send deadline notification to:', users.map(u => u.email));
-    console.log('Company:', company.name);
-    console.log('New deadline:', deadlineDate);
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
+    }
+
+    // Send email to all company users using Resend HTTP API
+    const emailPromises = users.map(user => 
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: "ESG Assessment <onboarding@resend.dev>",
+          to: [user.email],
+          subject: `ESG Assessment Deadline Update - ${company.name}`,
+          html: `
+            <h1>ESG Assessment Deadline Update</h1>
+            <p>Dear Team,</p>
+            <p>This is to inform you that the ESG assessment deadline for <strong>${company.name}</strong> has been updated.</p>
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="color: #2563eb; margin: 0;">New Deadline: ${deadlineDate}</h2>
+            </div>
+            <p>Please ensure that your ESG assessment submission is completed by this date.</p>
+            <p>If you have any questions or need assistance, please don't hesitate to reach out.</p>
+            <p>Best regards,<br>ESG Assessment Team</p>
+          `,
+        }),
+      })
+    );
+
+    const results = await Promise.all(emailPromises);
+    
+    console.log('Email notification results:', results.map(r => r.status));
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Deadline notification logged for ${users.length} users`,
-        company: company.name,
-        deadline: deadlineDate,
-        users: users.length
+        message: `Deadline notifications sent to ${users.length} users`,
+        emailsSent: results.length
       }),
       {
         status: 200,

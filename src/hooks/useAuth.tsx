@@ -84,10 +84,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user?.email) {
         console.log('AuthProvider - About to fetch profile for:', session.user.email);
         try {
-          await fetchUserProfile(session.user.email);
-          console.log('AuthProvider - Profile fetch completed');
+          const profileResult = await fetchUserProfile(session.user.email);
+          console.log('AuthProvider - Profile fetch completed, result:', profileResult);
+          if (!profileResult) {
+            console.log('AuthProvider - No profile found, clearing session');
+            // If no profile found, clear the session
+            await supabase.auth.signOut();
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+          }
         } catch (error) {
           console.error('AuthProvider - Profile fetch failed:', error);
+          console.log('AuthProvider - Clearing session due to profile fetch failure');
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setProfile(null);
         }
       } else {
         setProfile(null);
@@ -116,7 +129,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user?.email) {
-          await fetchUserProfile(session.user.email);
+          console.log('AuthProvider - Auth change: fetching profile for:', session.user.email);
+          try {
+            const profileResult = await fetchUserProfile(session.user.email);
+            if (!profileResult) {
+              console.log('AuthProvider - Auth change: No profile found, clearing session');
+              await supabase.auth.signOut();
+              return;
+            }
+          } catch (error) {
+            console.error('AuthProvider - Auth change: Profile fetch failed:', error);
+          }
         } else {
           setProfile(null);
         }

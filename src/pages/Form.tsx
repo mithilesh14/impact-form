@@ -104,13 +104,18 @@ const Form = () => {
       if (responsesError) throw responsesError;
 
       // Fetch historical data from submission_with_history view
+      // Query for current year to get view with both current and last year data
       const { data: historyData, error: historyError } = await supabase
         .from('submission_with_history')
         .select('*')
         .eq('company_id', profile?.company_id)
-        .eq('reporting_year', currentYear - 1);
+        .eq('reporting_year', currentYear); // Query current year, not previous year
 
-      if (historyError) throw historyError;
+      console.log('Form component - history data:', historyData);
+
+      if (historyError) {
+        console.error('Form component - history error:', historyError);
+      }
 
       // Map responses and history to answers
       const answersMap: Record<string, { current: string; lastYear: string; comments: string }> = {};

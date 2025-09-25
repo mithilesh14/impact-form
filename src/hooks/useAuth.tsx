@@ -37,15 +37,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('email', userEmail)
         .maybeSingle();
 
-      console.log('Profile fetch result:', { data, error });
+      console.log('Profile fetch result:', { data, error, hasData: !!data });
       
       if (error) {
         console.error('Profile fetch error:', error);
-        throw error;
+        setProfile(null);
+        return null;
       }
       
-      console.log('Setting profile data:', data);
-      setProfile(data);
+      if (data) {
+        console.log('Setting profile data:', data);
+        setProfile(data);
+      } else {
+        console.log('No profile data found for email:', userEmail);
+        setProfile(null);
+      }
       return data;
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -76,9 +82,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user?.email) {
-        await fetchUserProfile(session?.user?.email);
+        console.log('AuthProvider - About to fetch profile for:', session.user.email);
+        try {
+          await fetchUserProfile(session.user.email);
+          console.log('AuthProvider - Profile fetch completed');
+        } catch (error) {
+          console.error('AuthProvider - Profile fetch failed:', error);
+        }
       } else {
         setProfile(null);
+        console.log('AuthProvider - No session user, profile set to null');
       }
       
       console.log('AuthProvider - Setting loading to false after initial check');

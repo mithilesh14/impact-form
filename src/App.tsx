@@ -18,13 +18,23 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const { user, profile, loading } = useAuth();
 
+  console.log('AppRoutes - Current auth state:', { 
+    hasUser: !!user, 
+    hasProfile: !!profile, 
+    profileRole: profile?.role,
+    loading 
+  });
+
   if (loading) {
+    console.log('AppRoutes - Still loading, showing spinner');
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
+
+  console.log('AppRoutes - Rendering routes, user logged in:', !!user);
 
   return (
     <Routes>

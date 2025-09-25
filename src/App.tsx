@@ -31,19 +31,19 @@ const AppRoutes = () => {
       <Route path="/login" element={!user ? <Login /> : <Navigate to={getRoleBasedRedirect(profile?.role)} replace />} />
       
       <Route path="/" element={
-        <ProtectedRoute allowedRoles={['Client']}>
+        <ProtectedRoute allowedRoles={['submitter']}>
           <Index />
         </ProtectedRoute>
       } />
       
       <Route path="/sections" element={
-        <ProtectedRoute allowedRoles={['Client']}>
+        <ProtectedRoute allowedRoles={['submitter']}>
           <Sections />
         </ProtectedRoute>
       } />
       
       <Route path="/form/:sectionId" element={
-        <ProtectedRoute allowedRoles={['Client']}>
+        <ProtectedRoute allowedRoles={['submitter']}>
           <Form />
         </ProtectedRoute>
       } />
@@ -67,7 +67,7 @@ const AppRoutes = () => {
 
 const getRoleBasedRedirect = (role?: string) => {
   switch (role) {
-    case 'Client': return '/sections';
+    case 'submitter': return '/sections';
     case 'Admin': return '/admin';
     case 'Reviewer': return '/reviewer';
     default: return '/login';

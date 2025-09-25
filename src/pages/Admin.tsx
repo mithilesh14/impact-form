@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Building2, FileQuestion } from "lucide-react";
+import { Users, Building2, FileQuestion, Calendar } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import CompanyManager from "@/components/admin/CompanyManager";
 import QuestionManager from "@/components/admin/QuestionManager";
 import UserManager from "@/components/admin/UserManager";
+import DeadlineManager from "@/components/admin/DeadlineManager";
 
 const Admin = () => {
   return (
@@ -27,7 +28,7 @@ const Admin = () => {
         
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="companies" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 glass-card">
+            <TabsList className="grid w-full grid-cols-4 glass-card">
               <TabsTrigger value="companies" className="flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
                 Companies
@@ -39,6 +40,10 @@ const Admin = () => {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Users
+              </TabsTrigger>
+              <TabsTrigger value="deadlines" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Deadlines
               </TabsTrigger>
             </TabsList>
 
@@ -52,6 +57,10 @@ const Admin = () => {
 
             <TabsContent value="users">
               <UserManager />
+            </TabsContent>
+
+            <TabsContent value="deadlines">
+              <DeadlineManager />
             </TabsContent>
           </Tabs>
         </div>

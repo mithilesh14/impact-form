@@ -30,13 +30,31 @@ const QuestionManager = () => {
     section: '',
     input_type: 'text'
   });
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [newSection, setNewSection] = useState('');
 
-  const sections = ['general', 'governance', 'environmental', 'social'];
   const inputTypes = ['text', 'textarea', 'number', 'select', 'checkbox'];
 
   useEffect(() => {
     fetchQuestions();
+    fetchSections();
   }, []);
+
+  const fetchSections = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('section')
+        .order('section');
+      
+      if (error) throw error;
+      
+      const uniqueSections = [...new Set(data?.map(q => q.section) || [])];
+      setAvailableSections(uniqueSections);
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+    }
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -77,9 +95,11 @@ const QuestionManager = () => {
           description: "Question updated successfully",
         });
       } else {
+        // Don't include code in insert - let trigger generate it
+        const { code, ...insertData } = formData;
         const { error } = await supabase
           .from('questions')
-          .insert([formData]);
+          .insert([insertData]);
 
         if (error) throw error;
         
@@ -93,6 +113,7 @@ const QuestionManager = () => {
       setEditingQuestion(null);
       setShowForm(false);
       fetchQuestions();
+      fetchSections();
     } catch (error) {
       console.error('Error saving question:', error);
       toast({
@@ -184,24 +205,44 @@ const QuestionManager = () => {
                     id="code"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    required
+                    placeholder="Auto-generated if empty"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty to auto-generate</p>
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="section">Section</Label>
-                  <Select value={formData.section} onValueChange={(value) => setFormData({ ...formData, section: value })}>
+                  <Select value={formData.section} onValueChange={(value) => {
+                    if (value === '__new__') {
+                      setNewSection('');
+                    } else {
+                      setFormData({ ...formData, section: value });
+                    }
+                  }}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select section" />
+                      <SelectValue placeholder="Select or create section" />
                     </SelectTrigger>
                     <SelectContent>
-                      {sections.map((section) => (
+                      {availableSections.map((section) => (
                         <SelectItem key={section} value={section}>
                           {section.charAt(0).toUpperCase() + section.slice(1)}
                         </SelectItem>
                       ))}
+                      <SelectItem value="__new__">+ Create New Section</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {(formData.section === '__new__' || !availableSections.includes(formData.section)) && (
+                    <Input
+                      placeholder="Enter new section name"
+                      value={newSection || formData.section}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewSection(value);
+                        setFormData({ ...formData, section: value });
+                      }}
+                    />
+                  )}
                 </div>
                 
                 <div>
@@ -243,7 +284,7 @@ const QuestionManager = () => {
       )}
 
       <div className="space-y-4">
-        {sections.map((section) => {
+        {availableSections.map((section) => {
           const sectionQuestions = questions.filter(q => q.section === section);
           if (sectionQuestions.length === 0) return null;
           

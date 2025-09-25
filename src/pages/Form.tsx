@@ -188,125 +188,24 @@ const Form = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!submissionId || !currentQuestion) return;
+  const exportToExcel = () => {
+    const exportData = currentSectionQuestions.map(question => ({
+      'Question Code': question.code,
+      'Section': question.section,
+      'Question': question.question_text,
+      'Response': formData[question.id] || '',
+      'Input Type': question.input_type
+    }));
 
-    try {
-      // First try to update existing response
-      const { data: existingResponse, error: selectError } = await supabase
-        .from('responses')
-        .select('id')
-        .eq('submission_id', submissionId)
-        .eq('question_id', currentQuestion.id)
-        .maybeSingle();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sections[currentSection]);
+    XLSX.writeFile(wb, `${sections[currentSection]}_draft.xlsx`);
 
-      if (selectError) throw selectError;
-
-      if (existingResponse) {
-        // Update existing response
-        const { error: updateError } = await supabase
-          .from('responses')
-          .update({
-            value_text: currentAnswer.current,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingResponse.id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new response
-        const { error: insertError } = await supabase
-          .from('responses')
-          .insert({
-            submission_id: submissionId,
-            question_id: currentQuestion.id,
-            value_text: currentAnswer.current,
-          });
-
-        if (insertError) throw insertError;
-      }
-
-      toast({
-        title: "Progress saved",
-        description: "Your responses have been saved successfully.",
-      });
-    } catch (error) {
-      console.error('Error saving:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save progress.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!submissionId) return;
-
-    try {
-      // Save all answers using the same update-or-insert logic
-      for (const question of questions) {
-        const responseValue = answers[question.id]?.current || '';
-        
-        // First try to update existing response
-        const { data: existingResponse, error: selectError } = await supabase
-          .from('responses')
-          .select('id')
-          .eq('submission_id', submissionId)
-          .eq('question_id', question.id)
-          .maybeSingle();
-
-        if (selectError) throw selectError;
-
-        if (existingResponse) {
-          // Update existing response
-          const { error: updateError } = await supabase
-            .from('responses')
-            .update({
-              value_text: responseValue,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingResponse.id);
-
-          if (updateError) throw updateError;
-        } else {
-          // Insert new response
-          const { error: insertError } = await supabase
-            .from('responses')
-            .insert({
-              submission_id: submissionId,
-              question_id: question.id,
-              value_text: responseValue,
-            });
-
-          if (insertError) throw insertError;
-        }
-      }
-
-      // Update submission status
-      const { error: updateError } = await supabase
-        .from('submissions')
-        .update({ 
-          status: 'submitted',
-          submitted_at: new Date().toISOString()
-        })
-        .eq('id', submissionId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Assessment completed",
-        description: "Your ESG assessment has been submitted for review.",
-      });
-      navigate("/sections");
-    } catch (error) {
-      console.error('Error submitting:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit assessment.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Success",
+      description: "Draft exported successfully",
+    });
   };
 
   if (loading) {

@@ -12,6 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import LogoutButton from "@/components/LogoutButton";
 
+const sectionTitles = {
+  "general": "General Information",
+  "governance": "Governance", 
+  "environmental": "Environmental",
+  "social": "Social",
+};
+
 interface Question {
   id: string;
   question_text: string;
@@ -269,7 +276,7 @@ const Form = () => {
     );
   }
 
-  const sectionTitle = sectionId?.charAt(0).toUpperCase() + sectionId?.slice(1);
+  const sectionTitle = sectionTitles[sectionId as keyof typeof sectionTitles] || sectionId?.charAt(0).toUpperCase() + sectionId?.slice(1);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">

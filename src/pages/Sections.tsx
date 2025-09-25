@@ -13,9 +13,17 @@ interface Section {
 }
 
 const sectionIcons = {
-  "Environmental": Leaf,
-  "Social": Users,
-  "Governance": Building2,
+  "general": Building2,
+  "governance": Users,
+  "environmental": Leaf,
+  "social": Users,
+};
+
+const sectionTitles = {
+  "general": "General Information",
+  "governance": "Governance",
+  "environmental": "Environmental", 
+  "social": "Social",
 };
 
 const Sections = () => {
@@ -93,6 +101,7 @@ const Sections = () => {
           <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
             {sections.map((section, index) => {
               const IconComponent = sectionIcons[section.section as keyof typeof sectionIcons] || Building2;
+              const displayTitle = sectionTitles[section.section as keyof typeof sectionTitles] || section.section;
               const colors = [
                 { color: "text-success", bgColor: "bg-success/10" },
                 { color: "text-primary", bgColor: "bg-primary/10" },
@@ -111,7 +120,7 @@ const Sections = () => {
                       <IconComponent className={`w-8 h-8 ${colorSet.color}`} />
                     </div>
                     <CardTitle className="text-2xl flex items-center justify-between">
-                      {section.section}
+                      {displayTitle}
                       <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </CardTitle>
                   </CardHeader>

@@ -46,16 +46,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log('Setting profile data:', data);
       setProfile(data);
+      return data;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setProfile(null);
+      return null;
     }
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state change:', { event, user: !!session?.user });
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -64,21 +71,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setProfile(null);
         }
-        setLoading(false);
+        
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
+      console.log('Initial session check:', { user: !!session?.user });
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user?.email) {
-        fetchUserProfile(session.user.email);
+        fetchUserProfile(session.user.email).finally(() => {
+          if (mounted) setLoading(false);
+        });
+      } else {
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

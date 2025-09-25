@@ -25,60 +25,89 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">ESG Portal</h1>
-          <p className="text-muted-foreground">Sustainable reporting made simple</p>
+    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-4 -left-4 w-72 h-72 bg-primary/10 rounded-full animate-float"></div>
+        <div className="absolute top-1/3 -right-16 w-96 h-96 bg-success/5 rounded-full animate-float" style={{animationDelay: '1s'}}></div>
+        <div className="absolute -bottom-8 left-1/3 w-80 h-80 bg-primary/5 rounded-full animate-float" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-5xl font-bold mb-4 text-gradient animate-bounce-in">
+            ESG Portal
+          </h1>
+          <p className="text-xl text-white/80 font-light">
+            Sustainable reporting made simple
+          </p>
         </div>
         
-        <Card className="shadow-lg border-0 bg-card/80 backdrop-blur-sm">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Sign in</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access your dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full h-11 bg-primary hover:bg-primary-hover transition-colors"
-                disabled={isLoading}
-              >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-            <div className="mt-4 text-center">
-              <a href="#" className="text-sm text-primary hover:underline">
-                Forgot your password?
-              </a>
+        <div className="glass-card p-8 animate-scale-in interactive-lift">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-semibold text-foreground mb-2">Welcome back</h2>
+            <p className="text-muted-foreground font-light">
+              Sign in to access your sustainability dashboard
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                Email address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12 bg-white/50 border-white/20 backdrop-blur-sm transition-all duration-200 focus:bg-white/70 focus:border-primary/50 focus:shadow-glow"
+              />
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-12 bg-white/50 border-white/20 backdrop-blur-sm transition-all duration-200 focus:bg-white/70 focus:border-primary/50 focus:shadow-glow"
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-primary text-white font-medium rounded-2xl transition-all duration-200 hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] disabled:opacity-50"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                'Sign in to portal'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <a href="#" className="text-sm text-primary hover:text-primary-hover transition-colors duration-200 font-medium">
+              Forgot your password?
+            </a>
+          </div>
+        </div>
+
+        <p className="text-center text-white/60 text-sm mt-6 font-light">
+          Secure • Compliant • Sustainable
+        </p>
       </div>
     </div>
   );

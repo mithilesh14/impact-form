@@ -10,7 +10,8 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
-  Clock
+  Clock,
+  ChevronRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -102,142 +103,154 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-surface relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 -left-12 w-64 h-64 bg-primary/5 rounded-full animate-float"></div>
+        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-success/5 rounded-full animate-float" style={{animationDelay: '1.5s'}}></div>
+      </div>
+
+      <div className="container mx-auto px-6 py-12 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-16 animate-fade-in">
             <div>
-              <h1 className="text-5xl font-bold text-foreground mb-4 bg-gradient-to-r from-primary via-primary-hover to-primary bg-clip-text text-transparent">
+              <h1 className="text-6xl font-bold mb-4 text-gradient animate-bounce-in">
                 ESG Portal
               </h1>
-              <p className="text-xl text-muted-foreground">
-                Welcome back, {profile?.email}
+              <p className="text-2xl text-muted-foreground font-light">
+                Welcome back, <span className="font-medium text-foreground">{profile?.email}</span>
               </p>
             </div>
             <LogoutButton />
           </div>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Questions
-                </CardTitle>
-                <Target className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-300" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground mb-1">{progressStats.totalQuestions}</div>
-                <div className="flex items-center">
-                  <Badge variant="secondary" className="text-xs">
-                    {progressStats.sectionsCount} sections
-                  </Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            <div className="glass-card p-6 interactive-lift animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-primary-light rounded-2xl">
+                  <Target className="h-6 w-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-foreground">{progressStats.totalQuestions}</div>
+                  <div className="text-sm text-muted-foreground font-light">Questions</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-foreground">Total Questions</div>
+                <div className="text-xs text-muted-foreground">
+                  Across {progressStats.sectionsCount} sections
+                </div>
+              </div>
+            </div>
 
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Answered Questions
-                </CardTitle>
-                <CheckCircle2 className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-300" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground mb-1">{progressStats.answeredQuestions}</div>
-                <div className="flex items-center">
-                  <Badge variant="default" className="text-xs bg-success">
-                    {progressStats.completionPercentage}% complete
-                  </Badge>
+            <div className="glass-card p-6 interactive-lift animate-fade-in" style={{animationDelay: '0.1s'}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-success-light rounded-2xl">
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-foreground">{progressStats.answeredQuestions}</div>
+                  <div className="text-sm text-muted-foreground font-light">Completed</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-foreground">Answered Questions</div>
+                <div className="text-xs text-success font-medium">
+                  {progressStats.completionPercentage}% complete
+                </div>
+              </div>
+            </div>
 
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Remaining
-                </CardTitle>
-                <Clock className="h-5 w-5 text-warning group-hover:scale-110 transition-transform duration-300" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground mb-1">{progressStats.totalQuestions - progressStats.answeredQuestions}</div>
-                <div className="flex items-center">
-                  <Badge variant="secondary" className="text-xs">
-                    Questions left
-                  </Badge>
+            <div className="glass-card p-6 interactive-lift animate-fade-in" style={{animationDelay: '0.2s'}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-warning-light rounded-2xl">
+                  <Clock className="h-6 w-6 text-warning" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-foreground">{progressStats.totalQuestions - progressStats.answeredQuestions}</div>
+                  <div className="text-sm text-muted-foreground font-light">Remaining</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-foreground">Questions Left</div>
+                <div className="text-xs text-muted-foreground">
+                  Keep going!
+                </div>
+              </div>
+            </div>
 
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Current Year
-                </CardTitle>
-                <Calendar className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-300" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground mb-1">{new Date().getFullYear()}</div>
-                <div className="flex items-center">
-                  <Badge variant="secondary" className="text-xs">
-                    Reporting period
-                  </Badge>
+            <div className="glass-card p-6 interactive-lift animate-fade-in" style={{animationDelay: '0.3s'}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-primary-light rounded-2xl">
+                  <Calendar className="h-6 w-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-foreground">{new Date().getFullYear()}</div>
+                  <div className="text-sm text-muted-foreground font-light">Reporting</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-foreground">Current Year</div>
+                <div className="text-xs text-muted-foreground">
+                  Reporting period
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Main Actions */}
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <BarChart3 className="w-8 h-8 text-primary" />
+          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            <div className="glass-card p-10 interactive-lift animate-fade-in" style={{animationDelay: '0.4s'}}>
+              <div className="text-center space-y-6">
+                <div className="p-6 bg-gradient-primary rounded-3xl inline-block animate-float">
+                  <BarChart3 className="w-12 h-12 text-white" />
                 </div>
-                <CardTitle className="text-2xl">Start ESG Assessment</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  Begin your comprehensive sustainability reporting. Evaluate your Environmental, Social, and Governance impact.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center space-y-3">
-                  <Button 
-                    onClick={() => navigate("/sections")}
-                    className="w-full bg-primary hover:bg-primary-hover transition-colors"
-                  >
-                    Continue Assessment
-                  </Button>
+                <div className="space-y-3">
+                  <h3 className="text-3xl font-bold text-foreground">Start Assessment</h3>
+                  <p className="text-lg text-muted-foreground font-light leading-relaxed">
+                    Begin your comprehensive sustainability reporting. Evaluate your Environmental, Social, and Governance impact with our structured framework.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Button 
+                  onClick={() => navigate("/sections")}
+                  className="w-full h-14 bg-gradient-primary text-white font-semibold text-lg rounded-2xl transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+                >
+                  Continue Assessment
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            </div>
 
-            <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-8 h-8 text-success" />
+            <div className="glass-card p-10 interactive-lift animate-fade-in" style={{animationDelay: '0.5s'}}>
+              <div className="text-center space-y-6">
+                <div className="p-6 bg-gradient-to-br from-success to-primary rounded-3xl inline-block animate-float" style={{animationDelay: '1s'}}>
+                  <TrendingUp className="w-12 h-12 text-white" />
                 </div>
-                <CardTitle className="text-2xl">Progress Overview</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  Track your completion status and view detailed analytics of your ESG performance.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Completion</span>
-                    <span className="font-medium">{progressStats.completionPercentage}%</span>
+                <div className="space-y-3">
+                  <h3 className="text-3xl font-bold text-foreground">Progress Overview</h3>
+                  <p className="text-lg text-muted-foreground font-light leading-relaxed">
+                    Track your completion status and view detailed analytics of your ESG performance metrics and reporting progress.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
+                    <span className="text-2xl font-bold text-foreground">{progressStats.completionPercentage}%</span>
                   </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
+                  <div className="w-full bg-secondary/50 rounded-full h-3 overflow-hidden">
                     <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-500" 
+                      className="bg-gradient-primary h-full rounded-full transition-all duration-1000 shadow-glow" 
                       style={{ width: `${progressStats.completionPercentage}%` }}
                     />
                   </div>
+                  <div className="text-sm text-muted-foreground font-light">
+                    {progressStats.answeredQuestions} of {progressStats.totalQuestions} questions completed
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>

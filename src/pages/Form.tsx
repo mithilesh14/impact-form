@@ -283,31 +283,37 @@ const Form = () => {
   const sectionTitle = sectionTitles[sectionId as keyof typeof sectionTitles] || sectionId?.charAt(0).toUpperCase() + sectionId?.slice(1);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-surface relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 -left-12 w-64 h-64 bg-primary/5 rounded-full animate-float"></div>
+        <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-success/5 rounded-full animate-float" style={{animationDelay: '1.5s'}}></div>
+      </div>
+
+      <div className="container mx-auto px-6 py-12 relative z-10">
+        <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
+          <div className="mb-12 animate-fade-in">
+            <div className="flex items-center gap-6 mb-8">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate("/sections")}
-                className="hover:bg-secondary/50"
+                className="h-12 px-6 bg-white/50 hover:bg-white/70 border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 rounded-2xl font-medium"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Sections
               </Button>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-foreground">{sectionTitle} Assessment</h1>
-                <p className="text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</p>
+                <h1 className="text-4xl font-bold text-gradient mb-2">{sectionTitle} Assessment</h1>
+                <p className="text-xl text-muted-foreground font-light">Question {currentQuestionIndex + 1} of {questions.length}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={handleSave}
-                  className="hover:bg-secondary/50"
+                  className="h-12 px-6 bg-white/50 hover:bg-white/70 border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 rounded-2xl font-medium"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Save Progress
@@ -315,30 +321,38 @@ const Form = () => {
                 <LogoutButton />
               </div>
             </div>
-            <Progress value={progress} className="h-2" />
+            <div className="w-full bg-secondary/30 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-primary h-full rounded-full transition-all duration-1000 shadow-glow" 
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
 
           {/* Question Form */}
-          <Card className="shadow-lg border-0 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <div className="flex items-start justify-between">
+          <div className="glass-card p-10 interactive-lift animate-scale-in">
+            <div className="mb-8">
+              <div className="flex items-start justify-between mb-6">
                 <div className="flex-1">
-                  <div className="text-sm text-primary font-medium mb-2">{currentQuestion.code}</div>
-                  <CardTitle className="text-xl leading-relaxed">{currentQuestion.question_text}</CardTitle>
+                  <div className="inline-block px-4 py-2 bg-primary-light text-primary font-medium rounded-xl text-sm mb-4">
+                    {currentQuestion.code}
+                  </div>
+                  <h2 className="text-2xl font-bold text-foreground leading-relaxed">{currentQuestion.question_text}</h2>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="current">Current Year Value</Label>
+            </div>
+
+            <div className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label htmlFor="current" className="text-sm font-semibold text-foreground">Current Year Response</Label>
                   {currentQuestion.input_type === 'textarea' ? (
                     <Textarea
                       id="current"
-                      placeholder="Enter your response..."
+                      placeholder="Enter your detailed response..."
                       value={currentAnswer.current}
                       onChange={(e) => handleAnswerChange('current', e.target.value)}
-                      className="min-h-[100px]"
+                      className="min-h-[120px] bg-white/50 border-white/20 backdrop-blur-sm transition-all duration-200 focus:bg-white/70 focus:border-primary/50 focus:shadow-glow rounded-2xl"
                     />
                   ) : (
                     <Input
@@ -347,80 +361,81 @@ const Form = () => {
                       placeholder="Enter value..."
                       value={currentAnswer.current}
                       onChange={(e) => handleAnswerChange('current', e.target.value)}
-                      className="h-11"
+                      className="h-12 bg-white/50 border-white/20 backdrop-blur-sm transition-all duration-200 focus:bg-white/70 focus:border-primary/50 focus:shadow-glow rounded-2xl"
                     />
                   )}
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="lastYear">Last Year Value</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="lastYear" className="text-sm font-semibold text-muted-foreground">Previous Year (Reference)</Label>
                   {currentQuestion.input_type === 'textarea' ? (
                     <Textarea
                       id="lastYear"
-                      placeholder="Last year's value (auto-populated)"
+                      placeholder="Previous year's response"
                       value={currentAnswer.lastYear}
                       disabled
-                      className="min-h-[100px] bg-muted"
+                      className="min-h-[120px] bg-muted/30 border-muted/50 text-muted-foreground rounded-2xl"
                     />
                   ) : (
                     <Input
                       id="lastYear"
                       type={currentQuestion.input_type === 'number' ? 'number' : 'text'}
-                      placeholder="Last year's value (auto-populated)"
+                      placeholder="Previous year's value"
                       value={currentAnswer.lastYear}
                       disabled
-                      className="h-11 bg-muted"
+                      className="h-12 bg-muted/30 border-muted/50 text-muted-foreground rounded-2xl"
                     />
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="comments">Additional Comments (Optional)</Label>
+              <div className="space-y-3">
+                <Label htmlFor="comments" className="text-sm font-semibold text-foreground">Additional Context <span className="font-normal text-muted-foreground">(Optional)</span></Label>
                 <Textarea
                   id="comments"
-                  placeholder="Provide context, methodology, or additional details..."
+                  placeholder="Provide methodology, context, or additional details..."
                   value={currentAnswer.comments}
                   onChange={(e) => handleAnswerChange('comments', e.target.value)}
-                  className="min-h-[80px]"
+                  className="min-h-[100px] bg-white/50 border-white/20 backdrop-blur-sm transition-all duration-200 focus:bg-white/70 focus:border-primary/50 focus:shadow-glow rounded-2xl"
                 />
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between pt-8 border-t border-white/20">
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
                   disabled={currentQuestionIndex === 0}
-                  className="hover:bg-secondary/50"
+                  className="h-12 px-6 bg-white/50 hover:bg-white/70 border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 rounded-2xl font-medium disabled:opacity-50"
                 >
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Previous
                 </Button>
 
-                <div className="text-sm text-muted-foreground">
-                  {currentQuestionIndex + 1} of {questions.length}
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-foreground">{currentQuestionIndex + 1} of {questions.length}</div>
+                  <div className="text-sm text-muted-foreground font-light">Questions</div>
                 </div>
 
                 {currentQuestionIndex === questions.length - 1 ? (
                   <Button 
                     onClick={handleSubmit}
-                    className="bg-success hover:bg-success/90 text-success-foreground"
+                    className="h-12 px-8 bg-gradient-to-r from-success to-primary text-white font-semibold rounded-2xl transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
                   >
                     Complete Assessment
                   </Button>
                 ) : (
                   <Button
                     onClick={handleNext}
-                    className="bg-primary hover:bg-primary-hover"
+                    className="h-12 px-6 bg-gradient-primary text-white font-semibold rounded-2xl transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
                   >
-                    Next
+                    Next Question
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

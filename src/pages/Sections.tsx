@@ -146,7 +146,7 @@ const Sections = () => {
                   onClick={() => handleSectionSelect(section.section)}
                 >
                   <div className="text-center space-y-6">
-                    <div className={`w-20 h-20 ${colorSet.bgColor} rounded-3xl flex items-center justify-center mx-auto group-hover:scale-110 transition-all duration-300 animate-float`}>
+                    <div className={`w-20 h-20 ${colorSet.bgColor} rounded-3xl flex items-center justify-center mx-auto group-hover:scale-105 transition-all duration-200`}>
                       <IconComponent className={`w-10 h-10 ${colorSet.color}`} />
                     </div>
                     

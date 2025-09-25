@@ -1,0 +1,293 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2, Edit, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Question {
+  id: string;
+  question_text: string;
+  code: string;
+  section: string;
+  input_type: string;
+}
+
+const QuestionManager = () => {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState({
+    question_text: '',
+    code: '',
+    section: '',
+    input_type: 'text'
+  });
+
+  const sections = ['general', 'governance', 'environmental', 'social'];
+  const inputTypes = ['text', 'textarea', 'number', 'select', 'checkbox'];
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .order('section', { ascending: true })
+        .order('code', { ascending: true });
+
+      if (error) throw error;
+      setQuestions(data || []);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch questions",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingQuestion) {
+        const { error } = await supabase
+          .from('questions')
+          .update(formData)
+          .eq('id', editingQuestion.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Question updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from('questions')
+          .insert([formData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Question created successfully",
+        });
+      }
+
+      setFormData({ question_text: '', code: '', section: '', input_type: 'text' });
+      setEditingQuestion(null);
+      setShowForm(false);
+      fetchQuestions();
+    } catch (error) {
+      console.error('Error saving question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save question",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (question: Question) => {
+    setEditingQuestion(question);
+    setFormData({
+      question_text: question.question_text,
+      code: question.code,
+      section: question.section,
+      input_type: question.input_type
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Question deleted successfully",
+      });
+      
+      fetchQuestions();
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete question",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Manage Questions</h2>
+        <Button onClick={() => setShowForm(true)} className="bg-gradient-primary text-white">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Question
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle>{editingQuestion ? 'Edit Question' : 'Add New Question'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="question_text">Question Text</Label>
+                <Textarea
+                  id="question_text"
+                  value={formData.question_text}
+                  onChange={(e) => setFormData({ ...formData, question_text: e.target.value })}
+                  required
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="code">Question Code</Label>
+                  <Input
+                    id="code"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="section">Section</Label>
+                  <Select value={formData.section} onValueChange={(value) => setFormData({ ...formData, section: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.map((section) => (
+                        <SelectItem key={section} value={section}>
+                          {section.charAt(0).toUpperCase() + section.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="input_type">Input Type</Label>
+                  <Select value={formData.input_type} onValueChange={(value) => setFormData({ ...formData, input_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select input type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {inputTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button type="submit" className="bg-gradient-primary text-white">
+                  {editingQuestion ? 'Update' : 'Create'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingQuestion(null);
+                    setFormData({ question_text: '', code: '', section: '', input_type: 'text' });
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-4">
+        {sections.map((section) => {
+          const sectionQuestions = questions.filter(q => q.section === section);
+          if (sectionQuestions.length === 0) return null;
+          
+          return (
+            <Card key={section} className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg capitalize">{section} Questions ({sectionQuestions.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {sectionQuestions.map((question) => (
+                  <div key={question.id} className="border border-border/50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                          {question.code} • {question.input_type}
+                        </h4>
+                        <p className="text-foreground">{question.question_text}</p>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(question)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(question.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default QuestionManager;

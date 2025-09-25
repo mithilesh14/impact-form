@@ -66,6 +66,9 @@ export type Database = {
         Row: {
           id: string
           question_id: string | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           submission_id: string | null
           updated_at: string | null
           value_text: string | null
@@ -73,6 +76,9 @@ export type Database = {
         Insert: {
           id?: string
           question_id?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           submission_id?: string | null
           updated_at?: string | null
           value_text?: string | null
@@ -80,6 +86,9 @@ export type Database = {
         Update: {
           id?: string
           question_id?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           submission_id?: string | null
           updated_at?: string | null
           value_text?: string | null
@@ -98,6 +107,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "submission_with_history"
             referencedColumns: ["question_id"]
+          },
+          {
+            foreignKeyName: "responses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "responses_submission_id_fkey"

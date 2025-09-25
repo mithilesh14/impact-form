@@ -30,12 +30,21 @@ const Sections = () => {
 
   const fetchSections = async () => {
     try {
+      console.log('Starting to fetch sections...');
       const { data, error } = await supabase
         .from('questions')
         .select('section')
         .order('section');
 
+      console.log('Supabase response:', { data, error });
+
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.log('No questions found in database');
+        setSections([]);
+        return;
+      }
 
       // Count questions per section
       const sectionCounts = data.reduce((acc: Record<string, number>, question) => {
@@ -43,11 +52,14 @@ const Sections = () => {
         return acc;
       }, {});
 
+      console.log('Section counts:', sectionCounts);
+
       const sectionsArray = Object.entries(sectionCounts).map(([section, count]) => ({
         section,
         count: count as number
       }));
 
+      console.log('Sections array:', sectionsArray);
       setSections(sectionsArray);
     } catch (error) {
       console.error('Error fetching sections:', error);

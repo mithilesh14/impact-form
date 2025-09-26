@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { FileUpload } from "@/components/ui/file-upload";
 import { ChevronLeft, ChevronRight, Save, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ const Form = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, { current: string; lastYear: string; comments: string }>>({});
+  const [responseIds, setResponseIds] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
 
@@ -220,15 +222,25 @@ const Form = () => {
         value_text: answer.current
       }));
 
+      const savedResponseIds: Record<string, string> = {};
+
       for (const response of responses) {
         if (!response.value_text) continue;
         
-        await supabase
+        const { data: savedResponse } = await supabase
           .from('responses')
           .upsert(response, {
             onConflict: 'submission_id,question_id'
-          });
+          })
+          .select('id, question_id')
+          .single();
+
+        if (savedResponse) {
+          savedResponseIds[savedResponse.question_id] = savedResponse.id;
+        }
       }
+
+      setResponseIds(prev => ({ ...prev, ...savedResponseIds }));
 
       toast({
         title: "Success",
@@ -422,6 +434,28 @@ const Form = () => {
                 />
               </div>
 
+              {/* File Attachments */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-foreground">Supporting Documents <span className="font-normal text-muted-foreground">(Optional)</span></Label>
+                <div className="p-4 bg-white/30 rounded-2xl border border-white/20">
+                  <FileUpload
+                    responseId={responseIds[currentQuestion.id]}
+                    maxFiles={3}
+                    maxSize={10 * 1024 * 1024} // 10MB
+                    accept={['image/*', 'application/pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv']}
+                    onFilesChange={(files) => {
+                      // Optional: Handle file changes if needed
+                      console.log('Files updated:', files);
+                    }}
+                  />
+                  {!responseIds[currentQuestion.id] && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      Save your answer first to enable file uploads
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {/* Navigation */}
               <div className="flex items-center justify-between pt-8 border-t border-white/20">
                 <Button
@@ -434,9 +468,20 @@ const Form = () => {
                   Previous
                 </Button>
 
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-foreground">{currentQuestionIndex + 1} of {questions.length}</div>
-                  <div className="text-sm text-muted-foreground font-light">Questions</div>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleSave}
+                    className="h-12 px-6 bg-white/50 hover:bg-white/70 border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 rounded-2xl font-medium"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Progress
+                  </Button>
+                  
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-foreground">{currentQuestionIndex + 1} of {questions.length}</div>
+                    <div className="text-sm text-muted-foreground font-light">Questions</div>
+                  </div>
                 </div>
 
                 {currentQuestionIndex === questions.length - 1 ? (

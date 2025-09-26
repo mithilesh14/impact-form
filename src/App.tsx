@@ -16,6 +16,15 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const getRoleBasedRedirect = (role?: string) => {
+  switch (role) {
+    case 'Submitter': return '/'; // Go to dashboard first, not sections
+    case 'Admin': return '/admin';
+    case 'Reviewer': return '/reviewer';
+    default: return '/login';
+  }
+};
+
 const AppRoutes = () => {
   const { user, profile, loading, loadingProgress } = useAuth();
 
@@ -79,15 +88,6 @@ const AppRoutes = () => {
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
-};
-
-const getRoleBasedRedirect = (role?: string) => {
-  switch (role) {
-    case 'Submitter': return '/'; // Go to dashboard first, not sections
-    case 'Admin': return '/admin';
-    case 'Reviewer': return '/reviewer';
-    default: return '/login';
-  }
 };
 
 const App = () => (

@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Progress } from './progress';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface LoadingProgressProps {
   steps?: string[];
@@ -8,7 +7,7 @@ interface LoadingProgressProps {
   className?: string;
 }
 
-export const LoadingProgress = ({ 
+export const LoadingProgress: React.FC<LoadingProgressProps> = ({ 
   steps = [
     'Initializing...',
     'Loading user data...',
@@ -16,51 +15,58 @@ export const LoadingProgress = ({
     'Setting up dashboard...',
     'Almost ready...'
   ],
-  duration = 3000,
+  duration = 3000, 
   className 
-}: LoadingProgressProps) => {
-  const [progress, setProgress] = useState(0);
+}) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     const stepDuration = duration / steps.length;
-    const progressIncrement = 100 / steps.length;
 
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const newProgress = prev + (progressIncrement / (stepDuration / 50));
-        
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          return 100;
+      setCurrentStep((prev) => {
+        if (prev < steps.length - 1) {
+          return prev + 1;
         }
-        
-        const newStepIndex = Math.floor((newProgress / 100) * steps.length);
-        if (newStepIndex !== currentStep && newStepIndex < steps.length) {
-          setCurrentStep(newStepIndex);
-        }
-        
-        return newProgress;
+        clearInterval(interval);
+        return prev;
       });
-    }, 50);
+    }, stepDuration);
 
     return () => clearInterval(interval);
-  }, [duration, steps.length, currentStep]);
+  }, [steps, duration]);
 
   return (
-    <div className={cn("w-full max-w-md space-y-4", className)}>
-      <div className="text-center">
-        <div className="text-sm font-medium text-foreground mb-2">
-          {steps[currentStep]}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {Math.round(progress)}% complete
-        </div>
+    <div className={cn("flex flex-col items-center space-y-6 p-6", className)}>
+      {/* Square Grid Loader */}
+      <div className="relative w-16 h-16">
+        {[...Array(9)].map((_, index) => {
+          const row = Math.floor(index / 3);
+          const col = index % 3;
+          return (
+            <div
+              key={index}
+              className="absolute w-2.5 h-2.5 bg-primary rounded-sm"
+              style={{
+                top: '50%',
+                left: '50%',
+                marginTop: `${(row - 1) * 20 - 5}px`,
+                marginLeft: `${(col - 1) * 20 - 5}px`,
+                animation: `squareLoader 675ms ease-in-out ${index * 75}ms infinite alternate`,
+              }}
+            />
+          );
+        })}
       </div>
-      <Progress 
-        value={progress} 
-        className="h-2 bg-secondary"
-      />
+      
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          {steps[currentStep] || "Loading..."}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Step {currentStep + 1} of {steps.length}
+        </p>
+      </div>
     </div>
   );
 };
@@ -70,34 +76,36 @@ interface QuickLoadingProps {
   className?: string;
 }
 
-export const QuickLoading = ({ 
-  message = "Loading...",
+export const QuickLoading: React.FC<QuickLoadingProps> = ({ 
+  message = "Loading...", 
   className 
-}: QuickLoadingProps) => {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + Math.random() * 30;
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
+}) => {
   return (
-    <div className={cn("flex flex-col items-center space-y-3", className)}>
-      <div className="text-sm font-medium text-foreground">
+    <div className={cn("flex flex-col items-center space-y-6 p-6", className)}>
+      {/* Square Grid Loader */}
+      <div className="relative w-16 h-16">
+        {[...Array(9)].map((_, index) => {
+          const row = Math.floor(index / 3);
+          const col = index % 3;
+          return (
+            <div
+              key={index}
+              className="absolute w-2.5 h-2.5 bg-primary rounded-sm"
+              style={{
+                top: '50%',
+                left: '50%',
+                marginTop: `${(row - 1) * 20 - 5}px`,
+                marginLeft: `${(col - 1) * 20 - 5}px`,
+                animation: `squareLoader 675ms ease-in-out ${index * 75}ms infinite alternate`,
+              }}
+            />
+          );
+        })}
+      </div>
+      
+      <p className="text-sm text-muted-foreground text-center">
         {message}
-      </div>
-      <div className="w-32">
-        <Progress value={progress} className="h-1" />
-      </div>
+      </p>
     </div>
   );
 };

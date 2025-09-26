@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import InactivityWrapper from "./components/InactivityWrapper";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Sections from "./pages/Sections";
@@ -16,12 +17,27 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, loadingProgress } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+        <div className="glass-card p-8 w-full max-w-md">
+          <div className="text-center space-y-4">
+            <div className="text-lg font-medium text-foreground">
+              Loading ESG Portal...
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div 
+                className="bg-gradient-primary h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {Math.round(loadingProgress)}% complete
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -81,7 +97,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <InactivityWrapper>
+            <AppRoutes />
+          </InactivityWrapper>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

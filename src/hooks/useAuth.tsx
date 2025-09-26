@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,8 +15,10 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  loadingProgress: number;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  clearCache: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +28,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const { toast } = useToast();
+
+  // Clear sensitive cache data
+  const clearCache = useCallback(() => {
+    try {
+      // Clear localStorage items that might contain sensitive data
+      const keysToRemove = [
+        'supabase.auth.token',
+        'sb-kgqgklcalmtdcbaqurhe-auth-token',
+        'current-form-data',
+        'user-preferences'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+      });
+
+      // Clear sessionStorage
+      sessionStorage.clear();
+      
+      // Clear any cookies (if using cookies for auth)
+      document.cookie.split(";").forEach((c) => {
+        const eqPos = c.indexOf("=");
+        const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      });
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  }, []);
 
   const fetchUserProfile = async (userEmail: string) => {
     try {
@@ -67,11 +99,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('AuthProvider - Starting auth initialization');
     let mounted = true;
     
+    // Progressive loading indicator
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 20;
+      });
+    }, 200);
+    
     // Fallback timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       console.log('AuthProvider - Loading timeout reached, setting loading to false');
       if (mounted) {
-        setLoading(false);
+        setLoadingProgress(100);
+        setTimeout(() => setLoading(false), 300);
       }
     }, 5000);
     
@@ -111,13 +152,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       console.log('AuthProvider - Setting loading to false after initial check');
-      setLoading(false);
+      setLoadingProgress(100);
+      setTimeout(() => setLoading(false), 300);
       clearTimeout(loadingTimeout);
+      clearInterval(progressInterval);
     }).catch((error) => {
       console.error('AuthProvider - Error getting session:', error);
       if (mounted) {
-        setLoading(false);
+        setLoadingProgress(100);
+        setTimeout(() => setLoading(false), 300);
         clearTimeout(loadingTimeout);
+        clearInterval(progressInterval);
       }
     });
 
@@ -154,6 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('AuthProvider - Cleanup');
       mounted = false;
       clearTimeout(loadingTimeout);
+      clearInterval(progressInterval);
       subscription.unsubscribe();
     };
   }, []);
@@ -180,10 +226,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clear cache before signing out
+    clearCache();
+    
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     setSession(null);
+    setLoadingProgress(0);
+    
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
@@ -196,8 +247,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile,
       session,
       loading,
+      loadingProgress,
       signIn,
       signOut,
+      clearCache,
     }}>
       {children}
     </AuthContext.Provider>

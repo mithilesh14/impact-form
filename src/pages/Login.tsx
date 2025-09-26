@@ -35,10 +35,15 @@ const Login = () => {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-5xl font-bold mb-4 text-gradient animate-bounce-in">
-            ESG Portal
-          </h1>
-          <p className="text-xl text-white/80 font-light">
+          <div className="relative">
+            <h1 className="text-6xl font-bold mb-6 text-white drop-shadow-2xl animate-bounce-in">
+              ESG Portal
+            </h1>
+            <div className="absolute inset-0 text-6xl font-bold mb-6 text-gradient animate-bounce-in opacity-80">
+              ESG Portal
+            </div>
+          </div>
+          <p className="text-xl text-white/90 font-light drop-shadow-lg">
             Sustainable reporting made simple
           </p>
         </div>
@@ -88,9 +93,11 @@ const Login = () => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Signing in...</span>
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-full bg-white/20 rounded-full h-1">
+                    <div className="bg-white h-1 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+                  </div>
+                  <span className="text-sm">Signing in...</span>
                 </div>
               ) : (
                 'Sign in to portal'

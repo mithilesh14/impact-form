@@ -103,7 +103,7 @@ const Login = () => {
                   <span className="text-sm">Signing in...</span>
                 </div>
               ) : (
-                'Sign in to portal'
+                'Sign in'
               )}
             </Button>
           </form>

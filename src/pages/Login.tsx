@@ -35,15 +35,18 @@ const Login = () => {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-12 animate-fade-in">
-          <div className="relative">
-            <h1 className="text-6xl font-bold mb-6 text-white drop-shadow-2xl animate-bounce-in">
+          <div className="relative mb-6">
+            <h1 className="text-7xl font-bold text-white drop-shadow-2xl animate-bounce-in relative z-10">
               ESG Portal
             </h1>
-            <div className="absolute inset-0 text-6xl font-bold mb-6 text-gradient animate-bounce-in opacity-80">
+            <div className="absolute inset-0 text-7xl font-bold bg-gradient-to-r from-white via-primary-light to-success bg-clip-text text-transparent animate-bounce-in opacity-90 blur-sm">
+              ESG Portal
+            </div>
+            <div className="absolute inset-0 text-7xl font-bold bg-gradient-to-r from-primary to-success bg-clip-text text-transparent animate-bounce-in" style={{animationDelay: '0.2s'}}>
               ESG Portal
             </div>
           </div>
-          <p className="text-xl text-white/90 font-light drop-shadow-lg">
+          <p className="text-2xl text-white font-medium drop-shadow-lg bg-black/20 backdrop-blur-sm rounded-2xl px-6 py-3 inline-block">
             Sustainable reporting made simple
           </p>
         </div>
